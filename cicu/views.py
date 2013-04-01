@@ -13,7 +13,6 @@ from django.conf import settings
 import logging
 logger = logging.getLogger('django.request')
 
-import pdb
 
 @csrf_exempt
 @require_POST
