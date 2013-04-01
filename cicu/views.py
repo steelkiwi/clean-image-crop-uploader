@@ -10,6 +10,9 @@ from .models import UploadedFile
 from .settings import IMAGE_CROPPED_UPLOAD_TO
 from django.conf import settings
 
+import logging
+logger = logging.getLogger('django.request')
+
 
 @csrf_exempt
 @require_POST
@@ -42,20 +45,35 @@ def crop(request):
             uploaded_file = UploadedFile.objects.get(id=imageId)
             img = Image.open( uploaded_file.file.path, mode='r' )
             values = [int(x) for x in box.split(',')]
+            logger.info('Crop Values: %s'%values)
 
             width = abs(values[2] - values[0])
             height = abs(values[3] - values[1])
-            if width and height and (width != img.size[0] or height != img.size[1]):
-                croppedImage = img.crop(values).resize((width,height),Image.ANTIALIAS)
-
-            else:
-                raise
+            logger.info('Crop values - w:%d h:%d maxW:%d maxH:%d' % (width, height, img.size[0], img.size[1],))
+            #if width and height and (width != img.size[0] or height != img.size[1]):
+            try:
+                croppedImage = img.crop(values).resize((width,height), Image.ANTIALIAS)
+                logger.info('Croppped image %s'%croppedImage)
+            except Exception as e:
+                logger.error('Crop Exception: %s'%e)
+            #else:
+            #    raise
 
             pathToFile = path.join(settings.MEDIA_ROOT,IMAGE_CROPPED_UPLOAD_TO)
+            logger.info('Cropped image pathToFile %s'%pathToFile)
+
             if not path.exists(pathToFile):
                 makedirs(pathToFile)
+                logger.info('Create dir %s'%pathToFile)
+
             pathToFile = path.join(pathToFile,uploaded_file.file.path.split(sep)[-1])
-            croppedImage.save(pathToFile)
+            logger.info('Trying to save croppedimage to %s'%pathToFile)
+
+            try:
+                croppedImage.save(pathToFile)
+                logger.info('Saved croppedimage to %s'%pathToFile)
+            except Exception as e:
+                logger.error('Crop Exception: %s'%e)
 
             new_file = UploadedFile()
             f = open(pathToFile, mode='r')
