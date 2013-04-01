@@ -13,6 +13,7 @@ from django.conf import settings
 import logging
 logger = logging.getLogger('django.request')
 
+import pdb
 
 @csrf_exempt
 @require_POST
@@ -49,18 +50,17 @@ def crop(request):
 
             width = abs(values[2] - values[0])
             height = abs(values[3] - values[1])
-            logger.info('Crop values - w:%d h:%d maxW:%d maxH:%d' % (width, height, img.size[0], img.size[1],))
-            #if width and height and (width != img.size[0] or height != img.size[1]):
-            try:
-                croppedImage = img.crop(values).resize((width,height), Image.ANTIALIAS)
-                logger.info('Croppped image %s'%croppedImage)
-            except Exception as e:
-                logger.error('Crop Exception: %s'%e)
-            #else:
-            #    raise
+
+            if width and height and (width != img.size[0] or height != img.size[1]):
+                logger.info('Crop values - w:%d h:%d maxW:%d maxH:%d' % (width, height, img.size[0], img.size[1],))
+                try:
+                    croppedImage = img.crop(values).resize((width,height), Image.ANTIALIAS)
+                    logger.info('Croppped image %s'%croppedImage)
+                except Exception as e:
+                    logger.error('Crop Exception: %s'%e)
+
 
             pathToFile = path.join(settings.MEDIA_ROOT,IMAGE_CROPPED_UPLOAD_TO)
-            logger.info('Cropped image pathToFile %s'%pathToFile)
 
             if not path.exists(pathToFile):
                 makedirs(pathToFile)
