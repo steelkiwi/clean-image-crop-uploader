@@ -152,7 +152,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             this.$modalWindow.modal('hide');
         }
         if(this.options.onCrop) {
-            var result = window[this.options.onCrop](this, this.$croppedImagePreview);
+            var result = window[this.options.onCrop](this, data);
             if(result === false)
                 return;
         }
