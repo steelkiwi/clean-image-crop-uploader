@@ -54,7 +54,7 @@ class CicuUploderInput(forms.ClearableFileInput):
         })
         output = super(CicuUploderInput, self).render(name, value, attrs)
         option = self.optionsInput % self.options
-        autoDiscoverScript = "<script>$(function(){CicuWidget.autoDiscover();});</script>"
+        autoDiscoverScript = "<script>$(document).ready(function(){ $(function(){CicuWidget.autoDiscover();}); });</script>"
         return mark_safe(output+option+autoDiscoverScript)
 
     def value_from_datadict(self, data, files, name):
