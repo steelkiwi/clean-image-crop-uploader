@@ -16,7 +16,7 @@ class CicuUploderInput(forms.ClearableFileInput):
     template_with_clear = ''  # We don't need this
     template_with_initial = '%(input)s'
     #basic configuration for jcrop from django
-    optionsInput = '<input id="cicu-options" data-size-warning="%s"  data-ratio-width="%s" data-ratio-height="%s" data-modal-button-label="%s" data-change-button-text="%s" data-size-alert-message="%s" data-size-error-message="%s" data-modal-save-crop-message="%s" data-modal-close-crop-message="%s" data-uploading-message="%s" data-file-upload-label="%s" style="display: none;" />'
+    optionsInput = '<input id="cicu-options" data-size-warning="%s"  data-ratio-width="%s" data-ratio-height="%s" data-on-upload="%s" data-on-complete="%s" data-on-error="%s" data-on-remove="%s" data-on-crop="%s" data-modal-button-label="%s" data-change-button-text="%s" data-size-alert-message="%s" data-size-error-message="%s" data-modal-save-crop-message="%s" data-modal-close-crop-message="%s" data-uploading-message="%s" data-file-upload-label="%s" style="display: none;" />'
 
     def __init__(self, attrs=None, options=None):
         if not options: options = {}
@@ -27,6 +27,13 @@ class CicuUploderInput(forms.ClearableFileInput):
         self.options += (options.get('sizeWarning','True'),)
         self.options += (options.get('ratioWidth', ''),)
         self.options += (options.get('ratioHeight', ''),)
+
+        self.options += (options.get('onUpload', 'null'),)
+        self.options += (options.get('onComplete', 'null'),)
+        self.options += (options.get('onError', 'null'),)
+        self.options += (options.get('onRemove', 'null'),)
+        self.options += (options.get('onCrop', 'null'),)
+
         #input message customization and translation
         self.options += (options.get('modalButtonLabel',_('Upload image') ),)
         self.options += (options.get('changeButtonText',_('Change Image') ),)

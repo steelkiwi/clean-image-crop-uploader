@@ -141,7 +141,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         // distinguish between 200 response and other errors
         if(data.errors) {
             if(this.options.onError) {
-                this.options.onError.call(this, data);
+                window[this.options.onError](this, data);
             } else {
                 console.log('Crop failed:');
                 console.log(data);
@@ -152,7 +152,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             this.$modalWindow.modal('hide');
         }
         if(this.options.onCrop) {
-            var result = this.options.onUpload.call(this);
+            var result = window[this.options.onCrop](this, this.$croppedImagePreview);
             if(result === false)
                 return;
         }
@@ -160,7 +160,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
     CicuWidget.prototype.cropFail = function(xhr) {
         if(this.options.onError) {
-            this.options.onError.call(this);
+            window[this.options.onError](this);
         } else {
             console.log('Crop failed:');
             console.log(xhr);
@@ -174,7 +174,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         this.$fileUploadLabel.button('loading');
         this.$fileUploadLabel.addClass('disabled');
         if(this.options.onUpload) {
-            var result = this.options.onUpload.call(this);
+            var result = window[this.options.onUpload](this);
             if(result === false) return;
         }
         this.$element.attr('name', 'file');
@@ -196,7 +196,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         this.$fileUploadLabel.button('reset');
         if(data.errors) {
             if(this.options.onError) {
-                this.options.onError.call(this, data);
+                window[this.options.onError](this, data);
             } else {
                 console.log('Upload failed:');
                 console.log(data);
@@ -225,14 +225,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             this.$element = this.$element.clone(true).val('');
             tmp.replaceWith(this.$element);
             this.displaySelection();
-            if(this.options.onComplete) this.options.onComplete.call(this, data.path);
+            if(this.options.onComplete) window[this.options.onComplete](this, data.path);
 
         }
     };
 
     CicuWidget.prototype.uploadFail = function(xhr) {
         if(this.options.onError) {
-            this.options.onError.call(this);
+            window[this.options.onError](this);
         } else {
             console.log('Upload failed:');
             console.log(xhr);
