@@ -45,6 +45,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             sizeWarning : 'True',
             ratioWidth :'800',
             ratioHeight :'600',
+            onReady: null,
             onUpload: null,
             onComplete: null,
             onError: null,
@@ -120,6 +121,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             }
             return false;
         });
+        if(this.options.onReady) window[this.options.onReady](this);
     };
     CicuWidget.prototype.setCrop = function() {
         var self = this;
