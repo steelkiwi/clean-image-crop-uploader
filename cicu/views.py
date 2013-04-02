@@ -43,7 +43,7 @@ def crop(request):
             box = request.POST.get('cropping', None)
             imageId = request.POST.get('id', None)
             uploaded_file = UploadedFile.objects.get(id=imageId)
-            img = Image.open( uploaded_file.file.path, mode='r' )
+            img = croppedImage = Image.open( uploaded_file.file.path, mode='r' )
             values = [int(x) for x in box.split(',')]
             logger.info('Crop Values: %s'%values)
 
@@ -57,8 +57,6 @@ def crop(request):
                     logger.info('Croppped image %s'%croppedImage)
                 except Exception as e:
                     logger.error('Crop Exception: %s'%e)
-            else:
-                croppedImage = img
 
 
             pathToFile = path.join(settings.MEDIA_ROOT,IMAGE_CROPPED_UPLOAD_TO)
