@@ -10,9 +10,11 @@ from .models import UploadedFile
 from .settings import IMAGE_CROPPED_UPLOAD_TO
 from django.conf import settings
 
+import cStringIO
+
 import logging
 logger = logging.getLogger('django.request')
-
+import pdb
 
 @csrf_exempt
 @require_POST
@@ -22,7 +24,13 @@ def upload(request):
         uploaded_file = form.save()
         # pick an image file you have in the working directory
         # (or give full path name)
-        img = Image.open(uploaded_file.file.path, mode='r')
+        #pdb.set_trace()
+        try:
+            img = Image.open(uploaded_file.file.path, mode='r')
+        except:
+            im = cStringIO.StringIO(uploaded_file.file.read())
+            img = Image.open(im, mode='r')
+
         # get the image's width and height in pixels
         width, height = img.size
         data = {
