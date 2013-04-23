@@ -1,5 +1,6 @@
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.utils import simplejson
+from django.core.files.base import ContentFile
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.core.files import File
@@ -24,12 +25,10 @@ def upload(request):
         uploaded_file = form.save()
         # pick an image file you have in the working directory
         # (or give full path name)
-        #pdb.set_trace()
         try:
             img = Image.open(uploaded_file.file.path, mode='r')
-        except:
-            im = cStringIO.StringIO(uploaded_file.file.read())
-            img = Image.open(im, mode='r')
+        except NotImplementedError:
+            img = Image.open(cStringIO.StringIO(uploaded_file.file.read()), mode='r')
 
         # get the image's width and height in pixels
         width, height = img.size
@@ -46,53 +45,68 @@ def upload(request):
 @csrf_exempt
 @require_POST
 def crop(request):
-    try:
-        if request.method == 'POST':
-            box = request.POST.get('cropping', None)
-            imageId = request.POST.get('id', None)
-            uploaded_file = UploadedFile.objects.get(id=imageId)
+    #try:
+    if request.method == 'POST':
+        box = request.POST.get('cropping', None)
+        imageId = request.POST.get('id', None)
+        uploaded_file = UploadedFile.objects.get(id=imageId)
+        
+        try:
             img = croppedImage = Image.open( uploaded_file.file.path, mode='r' )
-            values = [int(x) for x in box.split(',')]
-            logger.info('Crop Values: %s'%values)
+        except:
+            img = croppedImage = Image.open(cStringIO.StringIO(uploaded_file.file.read()), mode='r')
 
-            width = abs(values[2] - values[0])
-            height = abs(values[3] - values[1])
+        values = [int(x) for x in box.split(',')]
+        logger.info('Crop Values: %s'%values)
 
-            if width and height and (width != img.size[0] or height != img.size[1]):
-                logger.info('Crop values - w:%d h:%d maxW:%d maxH:%d' % (width, height, img.size[0], img.size[1],))
-                try:
-                    croppedImage = img.crop(values).resize((width,height), Image.ANTIALIAS)
-                    logger.info('Croppped image %s'%croppedImage)
-                except Exception as e:
-                    logger.error('Crop Exception: %s'%e)
+        width = abs(values[2] - values[0])
+        height = abs(values[3] - values[1])
 
-
-            pathToFile = path.join(settings.MEDIA_ROOT,IMAGE_CROPPED_UPLOAD_TO)
-
-            if not path.exists(pathToFile):
-                makedirs(pathToFile)
-                logger.info('Create dir %s'%pathToFile)
-
-            pathToFile = path.join(pathToFile,uploaded_file.file.path.split(sep)[-1])
-            logger.info('Trying to save croppedimage to %s'%pathToFile)
-
+        if width and height and (width != img.size[0] or height != img.size[1]):
+            logger.info('Crop values - w:%d h:%d maxW:%d maxH:%d' % (width, height, img.size[0], img.size[1],))
             try:
-                croppedImage.save(pathToFile)
-                logger.info('Saved croppedimage to %s'%pathToFile)
+                croppedImage = img.crop(values).resize((width,height), Image.ANTIALIAS)
+                logger.info('Croppped image %s'%croppedImage)
             except Exception as e:
                 logger.error('Crop Exception: %s'%e)
 
-            new_file = UploadedFile()
-            f = open(pathToFile, mode='r')
-            new_file.file.save(uploaded_file.file.name, File(f))
-            f.close()
 
-            data = {
-                'path': new_file.file.url,
-                'id' : new_file.id,
-            }
+        pathToFile = path.join(settings.MEDIA_ROOT,IMAGE_CROPPED_UPLOAD_TO)
 
-            return HttpResponse(simplejson.dumps(data))
+        if not path.exists(pathToFile):
+            makedirs(pathToFile)
+            logger.info('Create dir %s'%pathToFile)
 
-    except Exception, e:
-        return HttpResponseBadRequest(simplejson.dumps({'errors': 'illegal request'}))
+        try:
+            pathToFile = path.join(pathToFile,uploaded_file.file.path.split(sep)[-1])
+            logger.info('Trying to save croppedimage to %s'%pathToFile)
+        except:
+            pathToFile = None
+            logger.info('Failed getting path is proabablly an s3 image croppedimage to %s'%pathToFile)
+
+        cropped_file = UploadedFile()
+
+        if not pathToFile:
+            logger.info('No path to file, is probably an s3 image')
+            cropped_file.file.save(uploaded_file.file.name, ContentFile(croppedImage.tostring()))
+        else:
+            try:
+                croppedImage.save(pathToFile)
+                logger.info('Saved croppedimage to %s'%pathToFile)
+
+                f = open(pathToFile, mode='r')
+                cropped_file.file.save(uploaded_file.file.name, File(f))
+                f.close()
+            except Exception as e:
+                logger.error('Crop Exception: %s'%e)
+
+
+        data = {
+            'path': cropped_file.file.url,
+            'id' : cropped_file.id,
+        }
+
+        return HttpResponse(simplejson.dumps(data))
+
+    #except Exception, e:
+    #   return HttpResponseBadRequest(simplejson.dumps({'errors': 'illegal request'}))
