@@ -1,21 +1,23 @@
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.utils import simplejson
-from django.core.files.base import ContentFile
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.core.files import File
+
 from PIL import Image
-from os import path, sep, makedirs
+from os import remove, path, sep, makedirs
+
 from .forms import UploadedFileForm
 from .models import UploadedFile
 from .settings import IMAGE_CROPPED_UPLOAD_TO
+
 from django.conf import settings
 
 import cStringIO
 
 import logging
 logger = logging.getLogger('django.request')
-import pdb
+
 
 @csrf_exempt
 @require_POST
@@ -47,14 +49,16 @@ def upload(request):
 def crop(request):
     #try:
     if request.method == 'POST':
+        pathToFile = path.join(settings.MEDIA_ROOT,IMAGE_CROPPED_UPLOAD_TO)
         box = request.POST.get('cropping', None)
         imageId = request.POST.get('id', None)
+
         uploaded_file = UploadedFile.objects.get(id=imageId)
-        
+
         try:
             img = croppedImage = Image.open( uploaded_file.file.path, mode='r' )
         except:
-            img = croppedImage = Image.open(cStringIO.StringIO(uploaded_file.file.read()), mode='r')
+            img = croppedImage = Image.open( cStringIO.StringIO(uploaded_file.file.read()), mode='r' )
 
         values = [int(x) for x in box.split(',')]
         logger.info('Crop Values: %s'%values)
@@ -67,38 +71,35 @@ def crop(request):
             try:
                 croppedImage = img.crop(values).resize((width,height), Image.ANTIALIAS)
                 logger.info('Croppped image %s'%croppedImage)
+
+                if not path.exists(pathToFile):
+                    makedirs(pathToFile)
+                    logger.info('Create dir %s'%pathToFile)
+
             except Exception as e:
                 logger.error('Crop Exception: %s'%e)
 
-
-        pathToFile = path.join(settings.MEDIA_ROOT,IMAGE_CROPPED_UPLOAD_TO)
-
-        if not path.exists(pathToFile):
-            makedirs(pathToFile)
-            logger.info('Create dir %s'%pathToFile)
 
         try:
-            pathToFile = path.join(pathToFile,uploaded_file.file.path.split(sep)[-1])
+            pathToFile = path.join(pathToFile, uploaded_file.file.path.split(sep)[-1])
             logger.info('Trying to save croppedimage to %s'%pathToFile)
         except:
-            pathToFile = None
-            logger.info('Failed getting path is proabablly an s3 image croppedimage to %s'%pathToFile)
+            # save the crop locally
+            pathToFile = path.join(settings.MEDIA_ROOT, uploaded_file.file.name)
+            logger.info('No path to file, is probably an s3 image, saving to %s'%pathToFile)
+
 
         cropped_file = UploadedFile()
+        
+        croppedImage.save(pathToFile) # save the image object
 
-        if not pathToFile:
-            logger.info('No path to file, is probably an s3 image')
-            cropped_file.file.save(uploaded_file.file.name, ContentFile(croppedImage.tostring()))
-        else:
-            try:
-                croppedImage.save(pathToFile)
-                logger.info('Saved croppedimage to %s'%pathToFile)
+        logger.info('Saved croppedimage to %s'%pathToFile)
 
-                f = open(pathToFile, mode='r')
-                cropped_file.file.save(uploaded_file.file.name, File(f))
-                f.close()
-            except Exception as e:
-                logger.error('Crop Exception: %s'%e)
+        cropped_file_name = uploaded_file.file.name
+        f = open(pathToFile, mode='r')
+        cropped_file.file.save(cropped_file_name, File(f))
+        f.close()
+        remove(f.name) # clean up after ourselves
 
 
         data = {
