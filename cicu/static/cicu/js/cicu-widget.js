@@ -111,10 +111,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
            self.$modalWindow.removeClass('hide')
         });
 
-        this.$element.on('click', function(event) {
-            console.log('fdsafd')
-        });
-
         // Listen for when a file is selected, and perform upload
         this.$element.on('change', function() {
             self.upload();
