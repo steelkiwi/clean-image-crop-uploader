@@ -7,6 +7,8 @@ from django.core.files import File
 from PIL import Image
 from os import remove, path, sep, makedirs
 
+import math
+
 from .forms import UploadedFileForm
 from .models import UploadedFile
 from .settings import IMAGE_CROPPED_UPLOAD_TO
@@ -60,7 +62,8 @@ def crop(request):
         except:
             img = croppedImage = Image.open( cStringIO.StringIO(uploaded_file.file.read()), mode='r' )
 
-        values = [int(x) for x in box.split(',')]
+        #import pdb;pdb.set_trace()
+        values = [int(math.floor(float(x))) for x in box.split(',')]
         logger.info('Crop Values: %s'%values)
 
         width = abs(values[2] - values[0])
