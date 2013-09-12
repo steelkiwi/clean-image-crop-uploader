@@ -84,6 +84,7 @@ class CicuUploderInput(forms.ClearableFileInput):
 
     class Media:
         js = (
+            "cicu/js/jquery.browser.min.js",
             "cicu/js/jquery.Jcrop.min.js",
             "cicu/js/jquery.iframe-transport.js",
             "cicu/js/cicu-widget.js",

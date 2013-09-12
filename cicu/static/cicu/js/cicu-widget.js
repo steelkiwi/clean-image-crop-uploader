@@ -72,6 +72,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
     CicuWidget.prototype.initialize = function() {
         var self = this;
+
         this.name = this.$element.attr('name');
         this.$modalButton = $('<a href="#uploadModal" role="button" class="btn upload-btn" data-toggle="modal">'+this.options['modalButtonLabel']+'</a>');
         this.$croppedImagePreview = $('<div class="cropped-imag-preview"><img src="'+this.$element.data('filename')+'"/></div>');
@@ -79,13 +80,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         this.$element.after(this.$croppedImagePreview);
 
         this.$modalWindow = $('<div id="uploadModal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">' +
+            '<div class="modal-dialog"><div class="modal-content">' +
             '<div id="uploadModalBody" class="modal-body image-body-modal">' +
-            '' +
+                '' +
             '</div>' +
             '<div class="modal-footer">' +
-            '<button class="btn" data-dismiss="modal" aria-hidden="true">'+this.options.modalCloseCropMessage+'</button>' +
-            '<button id="modal-set-image-button" class="btn btn-primary disabled">'+this.options.modalSaveCropMessage+'</button>' +
+                '<button class="btn" data-dismiss="modal" aria-hidden="true">'+this.options.modalCloseCropMessage+'</button>' +
+                '<button id="modal-set-image-button" class="btn btn-primary disabled">'+this.options.modalSaveCropMessage+'</button>' +
             '</div>' +
+            '</div></div>' +
             '</div>');
 
         this.$element.after(this.$modalWindow);
@@ -103,6 +106,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         // Initialize preview area and action buttons
         this.$previewArea = $('<div class="ajax-upload-preview-area"></div>');
         this.$uploadModalBody.append(this.$previewArea);
+
+        $(document).on( 'click', this.$element, function (event) {
+           self.$modalWindow.removeClass('hide')
+        });
+
+        this.$element.on('click', function(event) {
+            console.log('fdsafd')
+        });
 
         // Listen for when a file is selected, and perform upload
         this.$element.on('change', function() {
