@@ -64,7 +64,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     };
 
     CicuWidget.prototype.showMessage = function(message){
-        this.$warningSize.html(message+'<a class="close" data-dismiss="alert" href="#">&times;</a>').show();
+        this.$warningSize.html(message+'<a class="close" data-dismiss="alert" href="#">&times;</a>').removeClass('hide').show();
     };
 
     CicuWidget.prototype.DjangoCicuError.prototype = new Error();
@@ -212,7 +212,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             }
         } else {
             if ((data.width < this.options.ratioWidth || data.height < this.options.ratioHeight) && this.options.sizeWarning == 'True' ){
-
                 this.showMessage(this.options.sizeErrorMessage+this.options.ratioWidth+"x"+this.options.ratioHeight);
 
 
@@ -222,7 +221,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                     this.$hiddenElement.data('imagePath','');
                 }
 
-            }else{
+            } else {
                 this.$orgWidth = data.width;
                 this.$orgHeight = data.height;
                 this.$hiddenElement.data('imageId',data.id);

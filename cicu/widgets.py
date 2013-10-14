@@ -78,7 +78,7 @@ class CicuUploaderInput(forms.ClearableFileInput):
                 img = Image.open(uploaded_file.file.path, mode='r')
                 width, height = img.size
                 if (width < self.options[1] or height < self.options[2]) and self.options[0] == 'True':
-                    raise Exception('Image don\'t have correct ratio %sx%s' % (self.options[1], self.options[2]))
+                    raise Exception('Image doesn\'t have correct ratio %sx%s' % (self.options[1], self.options[2]))
                 return uploaded_file.file
             except Exception, e:
                 return None
