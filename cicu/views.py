@@ -4,6 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.core.files import File
+from django.core.files.base import ContentFile
 
 from PIL import Image
 from os import remove, path, sep, makedirs
@@ -54,11 +55,14 @@ def upload(request):
 def crop(request):
     #try:
     if request.method == 'POST':
-        pathToFile = path.join(settings.MEDIA_ROOT,IMAGE_CROPPED_UPLOAD_TO)
         box = request.POST.get('cropping', None)
         imageId = request.POST.get('id', None)
 
-        uploaded_file = UploadedFile.objects.get(id=imageId)
+        try:
+            uploaded_file = UploadedFile.objects.get(id=imageId)
+        except UploadedFile.DoesNotExist:
+            logger.error('Uploaded file does not exist: {0}'.format(imageId))
+            return
 
         try:
             img = croppedImage = Image.open( uploaded_file.file.path, mode='r' )
@@ -77,36 +81,16 @@ def crop(request):
             try:
                 croppedImage = img.crop(values).resize((width,height), Image.ANTIALIAS)
                 logger.info('Croppped image %s'%croppedImage)
-
-                if not path.exists(pathToFile):
-                    makedirs(pathToFile)
-                    logger.info('Create dir %s'%pathToFile)
-
             except Exception as e:
                 logger.error('Crop Exception: %s'%e)
 
-
-        try:
-            pathToFile = path.join(pathToFile, uploaded_file.file.path.split(sep)[-1])
-            logger.info('Trying to save croppedimage to %s'%pathToFile)
-        except:
-            # save the crop locally
-            pathToFile = path.join(settings.MEDIA_ROOT, uploaded_file.file.name)
-            logger.info('No path to file, is probably an s3 image, saving to %s'%pathToFile)
-
-
-        cropped_file = UploadedFile()
+        cropped_io = cStringIO.StringIO()
         
-        croppedImage.save(pathToFile) # save the image object
+        croppedImage.save(cropped_io, format='JPEG') # save the image object
 
-        logger.info('Saved croppedimage to %s'%pathToFile)
+        cropped_file = UploadedFile.objects.create()
 
-        cropped_file_name = uploaded_file.file.name
-        f = open(pathToFile, mode='r')
-        cropped_file.file.save(cropped_file_name, File(f))
-        f.close()
-        remove(f.name) # clean up after ourselves
-
+        cropped_file.file.save(uploaded_file.file.name, ContentFile(cropped_io.getvalue()))
 
         data = {
             'path': cropped_file.file.url,

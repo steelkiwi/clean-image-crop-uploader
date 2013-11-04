@@ -6,6 +6,8 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
 from PIL import Image
 from .models import UploadedFile
+import cStringIO
+from django.core.files.base import ContentFile
 
 
 class CicuException(Exception):
@@ -75,12 +77,18 @@ class CicuUploaderInput(forms.ClearableFileInput):
         elif name in data:  # This means a file id was specified in the POST field
             try:
                 uploaded_file = UploadedFile.objects.get(id=data.get('image'))
-                img = Image.open(uploaded_file.file.path, mode='r')
+                img = Image.open( cStringIO.StringIO(uploaded_file.file.read()), mode='r' )
+
                 width, height = img.size
                 if (width < self.options[1] or height < self.options[2]) and self.options[0] == 'True':
                     raise Exception('Image doesn\'t have correct ratio %sx%s' % (self.options[1], self.options[2]))
-                return uploaded_file.file
+
+                img_io = cStringIO.StringIO()
+                img.save(img_io, format='JPEG')
+                return ContentFile(img_io.getvalue())
             except Exception, e:
+                import traceback
+                traceback.print_exc()
                 return None
         return None
 
