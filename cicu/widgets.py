@@ -85,7 +85,7 @@ class CicuUploaderInput(forms.ClearableFileInput):
 
                 img_io = cStringIO.StringIO()
                 img.save(img_io, format='JPEG')
-                return ContentFile(img_io.getvalue())
+                return ContentFile(img_io.getvalue(), name=name)
             except Exception, e:
                 import traceback
                 traceback.print_exc()
