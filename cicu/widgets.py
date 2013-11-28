@@ -1,10 +1,11 @@
 from django import forms
 from django.conf import settings
-from django.core.files import File
 from django.core.urlresolvers import reverse
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
+
 from PIL import Image
+
 from .models import UploadedFile
 
 
@@ -18,9 +19,11 @@ class CicuUploaderInput(forms.ClearableFileInput):
     #basic configuration for jcrop from django
     optionsInput = '<input id="cicu-options" data-size-warning="%s"  data-ratio-width="%s" data-ratio-height="%s" data-modal-button-label="%s" data-change-button-text="%s" data-size-alert-message="%s" data-size-error-message="%s" data-modal-save-crop-message="%s" data-modal-close-crop-message="%s" data-uploading-message="%s" data-file-upload-label="%s" style="display: none;" />'
 
-    def __init__(self, attrs=None, options=None):
+    def __init__(self, attrs=None, options=None, field_name='image'):
         if not options: options = {}
         super(CicuUploaderInput , self).__init__(attrs)
+
+        self.field_name = field_name
 
         #jcrop configuration
         self.options = ()
@@ -64,13 +67,13 @@ class CicuUploaderInput(forms.ClearableFileInput):
             return file  # Default behaviour
         elif name in data:  # This means a file id was specified in the POST field
             try:
-                uploaded_file = UploadedFile.objects.get(id=data.get('image'))
+                uploaded_file = UploadedFile.objects.get(id=data.get(self.field_name))
                 img = Image.open(uploaded_file.file.path, mode='r')
                 width, height = img.size
                 if (width < self.options[1] or height < self.options[2]) and self.options[0] == 'True':
                     raise Exception('Image don\'t have correct ratio %sx%s' % (self.options[1], self.options[2]))
                 return uploaded_file.file
-            except Exception, e:
+            except Exception:
                 return None
         return None
 
