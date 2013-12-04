@@ -45,6 +45,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             sizeWarning : 'True',
             ratioWidth :'800',
             ratioHeight :'600',
+            onReady: null,
             onUpload: null,
             onComplete: null,
             onError: null,
@@ -63,7 +64,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     };
 
     CicuWidget.prototype.showMessage = function(message){
-        this.$warningSize.html(message+'<a class="close" data-dismiss="alert" href="#">&times;</a>').show();
+        this.$warningSize.html(message+'<a class="close" data-dismiss="alert" href="#">&times;</a>').removeClass('hide').show();
     };
 
     CicuWidget.prototype.DjangoCicuError.prototype = new Error();
@@ -71,6 +72,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
     CicuWidget.prototype.initialize = function() {
         var self = this;
+
         this.name = this.$element.attr('name');
         this.$modalButton = $('<a href="#uploadModal" role="button" class="btn upload-btn" data-toggle="modal">'+this.options['modalButtonLabel']+'</a>');
         this.$croppedImagePreview = $('<div class="cropped-imag-preview"><img src="'+this.$element.data('filename')+'"/></div>');
@@ -78,13 +80,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         this.$element.after(this.$croppedImagePreview);
 
         this.$modalWindow = $('<div id="uploadModal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">' +
+            '<div class="modal-dialog"><div class="modal-content">' +
             '<div id="uploadModalBody" class="modal-body image-body-modal">' +
-            '' +
+                '' +
             '</div>' +
             '<div class="modal-footer">' +
-            '<button class="btn" data-dismiss="modal" aria-hidden="true">'+this.options.modalCloseCropMessage+'</button>' +
-            '<button id="modal-set-image-button" class="btn btn-primary disabled">'+this.options.modalSaveCropMessage+'</button>' +
+                '<button class="btn" data-dismiss="modal" aria-hidden="true">'+this.options.modalCloseCropMessage+'</button>' +
+                '<button id="modal-set-image-button" class="btn btn-primary disabled">'+this.options.modalSaveCropMessage+'</button>' +
             '</div>' +
+            '</div></div>' +
             '</div>');
 
         this.$element.after(this.$modalWindow);
@@ -103,6 +107,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         this.$previewArea = $('<div class="ajax-upload-preview-area"></div>');
         this.$uploadModalBody.append(this.$previewArea);
 
+        $(document).on( 'click', this.$element, function (event) {
+           self.$modalWindow.removeClass('hide')
+        });
+
         // Listen for when a file is selected, and perform upload
         this.$element.on('change', function() {
             self.upload();
@@ -120,6 +128,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             }
             return false;
         });
+        if(this.options.onReady) window[this.options.onReady](this);
     };
     CicuWidget.prototype.setCrop = function() {
         var self = this;
@@ -141,7 +150,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         // distinguish between 200 response and other errors
         if(data.errors) {
             if(this.options.onError) {
-                this.options.onError.call(this, data);
+                window[this.options.onError](this, data);
             } else {
                 console.log('Crop failed:');
                 console.log(data);
@@ -152,7 +161,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             this.$modalWindow.modal('hide');
         }
         if(this.options.onCrop) {
-            var result = this.options.onUpload.call(this);
+            var result = window[this.options.onCrop](this, data);
             if(result === false)
                 return;
         }
@@ -160,7 +169,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
     CicuWidget.prototype.cropFail = function(xhr) {
         if(this.options.onError) {
-            this.options.onError.call(this);
+            window[this.options.onError](this);
         } else {
             console.log('Crop failed:');
             console.log(xhr);
@@ -174,7 +183,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         this.$fileUploadLabel.button('loading');
         this.$fileUploadLabel.addClass('disabled');
         if(this.options.onUpload) {
-            var result = this.options.onUpload.call(this);
+            var result = window[this.options.onUpload](this);
             if(result === false) return;
         }
         this.$element.attr('name', 'file');
@@ -196,14 +205,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         this.$fileUploadLabel.button('reset');
         if(data.errors) {
             if(this.options.onError) {
-                this.options.onError.call(this, data);
+                window[this.options.onError](this, data);
             } else {
                 console.log('Upload failed:');
                 console.log(data);
             }
         } else {
             if ((data.width < this.options.ratioWidth || data.height < this.options.ratioHeight) && this.options.sizeWarning == 'True' ){
-
                 this.showMessage(this.options.sizeErrorMessage+this.options.ratioWidth+"x"+this.options.ratioHeight);
 
 
@@ -213,7 +221,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                     this.$hiddenElement.data('imagePath','');
                 }
 
-            }else{
+            } else {
                 this.$orgWidth = data.width;
                 this.$orgHeight = data.height;
                 this.$hiddenElement.data('imageId',data.id);
@@ -225,14 +233,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             this.$element = this.$element.clone(true).val('');
             tmp.replaceWith(this.$element);
             this.displaySelection();
-            if(this.options.onComplete) this.options.onComplete.call(this, data.path);
+            if(this.options.onComplete) window[this.options.onComplete](this, data.path);
 
         }
     };
 
     CicuWidget.prototype.uploadFail = function(xhr) {
         if(this.options.onError) {
-            this.options.onError.call(this);
+            window[this.options.onError](this);
         } else {
             console.log('Upload failed:');
             console.log(xhr);

@@ -7,6 +7,8 @@ from django.utils.translation import ugettext as _
 from PIL import Image
 
 from .models import UploadedFile
+import cStringIO
+from django.core.files.base import ContentFile
 
 
 class CicuException(Exception):
@@ -17,7 +19,7 @@ class CicuUploaderInput(forms.ClearableFileInput):
     template_with_clear = ''  # We don't need this
     template_with_initial = '%(input)s'
     #basic configuration for jcrop from django
-    optionsInput = '<input id="cicu-options" data-size-warning="%s"  data-ratio-width="%s" data-ratio-height="%s" data-modal-button-label="%s" data-change-button-text="%s" data-size-alert-message="%s" data-size-error-message="%s" data-modal-save-crop-message="%s" data-modal-close-crop-message="%s" data-uploading-message="%s" data-file-upload-label="%s" style="display: none;" />'
+    optionsInput = '<input id="cicu-options" data-size-warning="%s"  data-ratio-width="%s" data-ratio-height="%s" data-on-ready="%s" data-on-upload="%s" data-on-complete="%s" data-on-error="%s" data-on-remove="%s" data-on-crop="%s" data-modal-button-label="%s" data-change-button-text="%s" data-size-alert-message="%s" data-size-error-message="%s" data-modal-save-crop-message="%s" data-modal-close-crop-message="%s" data-uploading-message="%s" data-file-upload-label="%s" style="display: none;" />'
 
     def __init__(self, attrs=None, options=None, field_name='image'):
         if not options: options = {}
@@ -30,6 +32,14 @@ class CicuUploaderInput(forms.ClearableFileInput):
         self.options += (options.get('sizeWarning', 'True'),)
         self.options += (options.get('ratioWidth', ''),)
         self.options += (options.get('ratioHeight', ''),)
+
+        self.options += (options.get('onReady', 'null'),)
+        self.options += (options.get('onUpload', 'null'),)
+        self.options += (options.get('onComplete', 'null'),)
+        self.options += (options.get('onError', 'null'),)
+        self.options += (options.get('onRemove', 'null'),)
+        self.options += (options.get('onCrop', 'null'),)
+
         #input message customization and translation
         self.options += (options.get('modalButtonLabel', _('Upload image')),)
         self.options += (options.get('changeButtonText', _('Change Image')),)
@@ -57,8 +67,10 @@ class CicuUploaderInput(forms.ClearableFileInput):
         })
         output = super(CicuUploaderInput, self).render(name, value, attrs)
         option = self.optionsInput % self.options
+
         autoDiscoverScript = "<script>$(function(){CicuWidget.autoDiscover();});</script>"
         return mark_safe(output + option + autoDiscoverScript)
+
 
     def value_from_datadict(self, data, files, name):
         # If a file was uploaded or the clear checkbox was checked, use that.
@@ -68,17 +80,25 @@ class CicuUploaderInput(forms.ClearableFileInput):
         elif name in data:  # This means a file id was specified in the POST field
             try:
                 uploaded_file = UploadedFile.objects.get(id=data.get(self.field_name))
-                img = Image.open(uploaded_file.file.path, mode='r')
+                img = Image.open( cStringIO.StringIO(uploaded_file.file.read()), mode='r' )
+
                 width, height = img.size
                 if (width < self.options[1] or height < self.options[2]) and self.options[0] == 'True':
-                    raise Exception('Image don\'t have correct ratio %sx%s' % (self.options[1], self.options[2]))
+                    raise Exception('Image doesn\'t have correct ratio %sx%s' % (self.options[1], self.options[2]))
+
+                if hasattr(uploaded_file.file, 'seek') and callable(uploaded_file.file.seek):
+                    uploaded_file.file.seek(0)
                 return uploaded_file.file
-            except Exception:
+
+            except Exception, e:
+                import traceback
+                traceback.print_exc()
                 return None
         return None
 
     class Media:
         js = (
+            "cicu/js/jquery.browser.min.js",
             "cicu/js/jquery.Jcrop.min.js",
             "cicu/js/jquery.iframe-transport.js",
             "cicu/js/cicu-widget.js",
